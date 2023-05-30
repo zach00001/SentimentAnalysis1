@@ -1,0 +1,56 @@
+import pandas as pd
+import numpy as np
+import os
+from sklearn.model_selection import train_test_split
+from sklearn.feature_extraction.text import CountVectorizer
+from sklearn.linear_model import LogisticRegression
+import streamlit as st
+
+st.cache()
+
+# change path to downloads
+os.chdir('/Users/ecuadorianwifi/Downloads')
+
+# read in csv. due to formatting issue, we remove the first row. set column names to review and their corresponding sentiment
+df = pd.read_csv('train.csv', names = ['review', 'sentiment'])
+df = df.iloc[1:]
+
+# set each df to its values in the larger df
+reviews = df['review'].values
+sentiments = df['sentiment'].values
+
+# create a training and testing set for each values for the model, then split the amounts going into testing and training (90% training, 10% testing)
+reviews_train, reviews_test, sentiment_train, sentiment_test = train_test_split(reviews, sentiments, test_size = 0.1, random_state = 500)
+
+# create vectorizer, fit reviews inside of it (turns into wordsoup)
+vectorizer = CountVectorizer()
+vectorizer.fit(reviews)
+
+# set the model's training and testing to the transformation of the review wordsoup
+x_train = vectorizer.transform(reviews_train)
+x_test = vectorizer.transform(reviews_test)
+
+# create and assign a logistic regression. input the testing values (wordsoup test from reviews, and the sentiment test)
+classifier = LogisticRegression()
+classifier.fit(x_test, sentiment_test)
+
+# function that returns the sentiment of an inputted array
+def analyze (arr):
+    x_new = vectorizer.transform(arr)
+    results = classifier.predict(x_new)
+    l = ''
+    x = list(results)
+    for i in x:
+        if i == '1':
+            l = 'This phrase is positive  👍'
+        else:
+            l = 'This phrase is negative  👎'
+    return l
+
+st.title('Sentiment Seer')
+input_phrase = st.text_input(label = 'Enter your phrase: ')
+a = []
+if input_phrase:
+    a.append(input_phrase)
+    b = analyze(a)
+    st.write(b)
